@@ -56,6 +56,9 @@ body{
 #brand-en{font-size:0.72rem;color:var(--ink);opacity:0.3;letter-spacing:0.4rem;text-transform:uppercase;}
 #lang-toggle{width:auto;min-width:30px;height:30px;border:none;background:transparent;color:var(--ink);font-size:14px;line-height:1;opacity:0.32;cursor:pointer;transition:opacity .3s;font-family:inherit;letter-spacing:0.08rem;}
 #lang-toggle:hover{opacity:0.6;}
+#sound-toggle{width:auto;min-width:30px;height:30px;border:none;background:transparent;color:var(--ink);font-size:16px;line-height:1;opacity:0.28;cursor:pointer;transition:opacity .3s;font-family:inherit;}
+#sound-toggle:hover{opacity:0.6;}
+#sound-toggle.on{opacity:0.75;}
 #menu-btn{width:30px;height:30px;border:none;background:transparent;color:var(--ink);font-size:18px;line-height:1;opacity:0.28;cursor:pointer;transition:opacity .3s;}
 #menu-btn:hover{opacity:0.6;}
 #menu{
@@ -73,6 +76,8 @@ body{
 #menu .sub a:hover{opacity:1;}
 #menu .row{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;}
 #menu .row .lbl{opacity:0.8;}
+#menu .mini{padding:3px 10px;border:1px solid rgba(0,0,0,0.15);background:transparent;border-radius:3px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;opacity:0.7;}
+#menu .mini:hover{opacity:1;}
 #menu input[type=range]{width:96px;}
 #menu .bg-btns{display:flex;gap:4px;flex-wrap:wrap;max-width:150px;justify-content:flex-end;}
 #menu .bg-btns button{padding:3px 8px;font-size:12px;border:1px solid rgba(0,0,0,0.15);background:transparent;border-radius:3px;font-family:inherit;color:var(--ink);cursor:pointer;opacity:0.7;}
@@ -147,6 +152,7 @@ body{
 <body>
   <div id="scene"></div>
   <div id="light-shadow" class="line"></div>
+  <audio id="bgm" loop></audio>
 
   <div id="leaves">
     <svg class="leaf" width="22" height="22" style="left:12%;animation-duration:14s;animation-delay:0s;" viewBox="0 0 24 24"><path d="M2 2 Q14 4 22 14 Q14 22 2 22 Q4 10 2 2 Z" fill="#7a8a72" opacity="0.22"/></svg>
@@ -160,6 +166,7 @@ body{
     <div id="brand-en">XianReverie</div>
     <button id="menu-btn" aria-label="菜单">☰</button>
     <button id="lang-toggle" aria-label="切换语言">EN</button>
+    <button id="sound-toggle" aria-label="声音" title="声音">♪</button>
   </div>
 
   <div id="frame" class="hidden"></div>
@@ -221,6 +228,7 @@ body{
       <div class="sub" id="sub-about"></div>
     </div>
     <div class="row"><span class="lbl" id="lbl-fade">淡出墨字</span><input type="checkbox" id="hide-text"></div>
+    <div class="row"><span class="lbl" id="lbl-next">换一首</span><button id="next-track" class="mini">▸</button></div>
   </div>
 
 <script>
@@ -658,14 +666,14 @@ body{
   const I18N = {
     zh: {
       memory:"回看往日", export:"导出图片", use:"使用说明", disc:"免责声明", about:"关于",
-      fade:"淡出墨字", bg:"背景", light:"光影", speed:"光速", sisters:"姊妹工具", hTitle:"往 日", hHint:"单击空白处返回",
+      fade:"淡出墨字", bg:"背景", light:"光影", speed:"光速", sound:"声音", next:"换一首", sisters:"姊妹工具", hTitle:"往 日", hHint:"单击空白处返回",
       useTxt:"闲坐是一个安静的个人角落，不联网、无账号、无分享。\n单击屏幕：写下今日一帧；回车后，会有一句回响。\n双击屏幕（或菜单里「回看」）：看往日留下的帧。\n菜单里可切换八幅山水背景，随心更换。",
       discTxt:"本软件仅供个人静心、记录与娱乐，不含任何商业、社交或数据收集功能。\n所有数据仅保存在本地浏览器，开发者无法访问。\n回响诗句整理自公开文献，仅供参考。",
       aboutTxt:"闲坐 XianReverie\n闲坐，不必言说。\n作者：永远的兰兰 · Lanlan Eternal"
     },
     en: {
       memory:"Memory", export:"Export", use:"How to use", disc:"Disclaimer", about:"About",
-      fade:"Fade text", bg:"Scene", light:"Light", speed:"Speed", sisters:"Sisters", hTitle:"Memory", hHint:"Tap anywhere to return",
+      fade:"Fade text", bg:"Scene", light:"Light", speed:"Speed", sound:"Sound", next:"Next", sisters:"Sisters", hTitle:"Memory", hHint:"Tap anywhere to return",
       useTxt:"Idle is a quiet personal corner. No network, no account, no sharing.\nTap the screen to write today's line; press Enter and a verse echoes back.\nDouble-tap (or \"Memory\" in the menu) to review past days.\nThe light drifting across the wall is time passing by.",
       discTxt:"For personal reflection and enjoyment only. No commerce, no social features, no tracking.\nAll data stays in your local browser; the developer cannot access it.\nVerses are compiled from public sources for reference.",
       aboutTxt:"XianReverie (Xiangzuo)\nSit idle, no need to speak.\nBy Lanlan Eternal"
@@ -856,6 +864,7 @@ body{
     $('lbl-bg').textContent = I18N[lang].bg;
     $('lbl-light').textContent = I18N[lang].light;
     $('lbl-speed').textContent = I18N[lang].speed;
+    $('lbl-next').textContent = I18N[lang].next;
     $('h-title').textContent = I18N[lang].hTitle;
     $('h-hint').textContent = I18N[lang].hHint;
     $('sub-use').textContent = I18N[lang].useTxt;
@@ -892,6 +901,49 @@ body{
     frame.style.opacity = off;
     echo.style.opacity = off;
     prompt.style.opacity = off;
+  });
+
+  // 声音：随机播放背景音（蝉鸣/古琴/冥想），音轨放 audio/ 目录
+  const TRACKS = [
+    { name: "蝉鸣", file: "audio/cicada.mp3" },
+    { name: "鸟鸣", file: "audio/birds.mp3" },
+    { name: "流水", file: "audio/stream.mp3" },
+    { name: "古琴", file: "audio/guqin.mp3" },
+    { name: "古筝", file: "audio/guzheng.mp3" },
+    { name: "琴箫", file: "audio/qinxiao.mp3" },
+    { name: "琵琶", file: "audio/pipa.mp3" },
+    { name: "昆曲", file: "audio/kunqu.mp3" },
+    { name: "评弹", file: "audio/pingtan.mp3" }
+  ];
+  const bgm = $('bgm'), soundToggle = $('sound-toggle'), nextTrack = $('next-track');
+  let trackIdx = -1;
+  let soundOn = true;   // 默认开：打开就随机播
+  function playRandomTrack() {
+    if (!TRACKS.length) return;
+    let idx;
+    do { idx = Math.floor(Math.random() * TRACKS.length); } while (idx === trackIdx && TRACKS.length > 1);
+    trackIdx = idx;
+    bgm.src = TRACKS[idx].file;
+    bgm.volume = 0.35;
+    bgm.play().catch(() => {});
+  }
+  function updateSoundUI() {
+    soundToggle.classList.toggle('on', soundOn);
+  }
+  soundToggle.addEventListener('click', () => {
+    soundOn = !soundOn;
+    if (soundOn) playRandomTrack();
+    else bgm.pause();
+    updateSoundUI();
+  });
+  nextTrack.addEventListener('click', () => {
+    if (soundOn) playRandomTrack();
+  });
+  // 打开时尝试自动播放；浏览器若拦截，则等用户第一次交互时补播
+  playRandomTrack();
+  updateSoundUI();
+  document.addEventListener('pointerdown', () => {
+    if (soundOn && bgm.paused) playRandomTrack();
   });
 
   setScene(bg);
