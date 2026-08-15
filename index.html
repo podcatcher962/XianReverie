@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>闲坐 · XianReverie</title>
+<style>
+:root{
+  --paper:#e8edef;
+  --ink:#3a3f42;
+  --font:"KaiTi","STKaiti","Noto Serif CJK SC","WenQuanYi Micro Hei",serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;}
+body{
+  background:var(--paper);font-family:var(--font);overflow:hidden;cursor:default;
+  -webkit-user-select:none;user-select:none;transition:background 1.2s;
+}
+#scene{position:fixed;inset:0;width:100%;height:100%;z-index:0;transition:opacity 1.2s;background-size:cover;background-position:center;}
+#scene.fade{opacity:0.3;}
+#leaves{display:none;}
+#leaves.show{display:block;}
+.leaf{position:fixed;top:-40px;width:22px;height:22px;z-index:0;pointer-events:none;animation:fall linear infinite;}
+@keyframes fall{
+  0%{transform:translateY(-5vh) translateX(0) rotate(0deg);}
+  25%{transform:translateY(25vh) translateX(4vw) rotate(90deg);}
+  50%{transform:translateY(55vh) translateX(-2vw) rotate(180deg);}
+  75%{transform:translateY(80vh) translateX(3vw) rotate(270deg);}
+  100%{transform:translateY(110vh) translateX(0) rotate(360deg);}
+}
+/* 光影：斜线（默认）/ 无，可切换；斜线加粗，速度用 --lspeed 可调 */
+#light-shadow{position:fixed;pointer-events:none;z-index:1;}
+/* 斜线（加粗） */
+#light-shadow.line{
+  top:0; bottom:0;
+  left:-50vw;
+  width:200vw;
+  background:linear-gradient(45deg,
+    transparent 0%, transparent 34%,
+    rgba(0,0,0,0.05) 42%,
+    rgba(0,0,0,0.20) 50%,
+    rgba(0,0,0,0.05) 58%,
+    transparent 66%, transparent 100%);
+  animation:sweep var(--lspeed, 400s) ease-in-out infinite alternate;
+}
+@keyframes sweep{
+  from{transform:translateX(0);}
+  to{transform:translateX(44vw);}
+}
+/* 无 */
+#light-shadow.none{display:none;}
+/* 右上角：竖排「闲坐」 + 英文名 + 菜单 */
+#brand-wrap{position:fixed;top:34px;right:120px;z-index:6;display:flex;flex-direction:column;align-items:center;gap:14px;}
+#brand{display:flex;flex-direction:column;align-items:center;font-size:2.5rem;color:var(--ink);opacity:0.4;letter-spacing:0.3rem;line-height:1.15;}
+#brand span{display:block;}
+#brand-en{font-size:0.72rem;color:var(--ink);opacity:0.3;letter-spacing:0.4rem;text-transform:uppercase;}
+#lang-toggle{width:auto;min-width:30px;height:30px;border:none;background:transparent;color:var(--ink);font-size:14px;line-height:1;opacity:0.32;cursor:pointer;transition:opacity .3s;font-family:inherit;letter-spacing:0.08rem;}
+#lang-toggle:hover{opacity:0.6;}
+#menu-btn{width:30px;height:30px;border:none;background:transparent;color:var(--ink);font-size:18px;line-height:1;opacity:0.28;cursor:pointer;transition:opacity .3s;}
+#menu-btn:hover{opacity:0.6;}
+#menu{
+  position:fixed;top:150px;right:22px;width:256px;
+  background:var(--paper);border:1px solid rgba(0,0,0,0.1);border-radius:6px;
+  padding:8px 0;font-size:15px;color:var(--ink);
+  opacity:0;pointer-events:none;transition:opacity .3s;z-index:7;
+}
+#menu.show{opacity:1;pointer-events:auto;}
+#menu .mi{display:block;width:100%;text-align:left;padding:11px 20px;background:none;border:none;font-family:inherit;font-size:15px;color:var(--ink);cursor:pointer;opacity:0.8;transition:opacity .2s;}
+#menu .mi:hover{opacity:1;}
+#menu .group:hover .sub{display:block;}
+#menu .sub{display:none;padding:2px 20px 12px;font-size:13px;line-height:1.9;color:var(--ink);opacity:0.65;}
+#menu .sub a{color:var(--ink);text-decoration:none;display:block;padding:1px 0;opacity:0.8;}
+#menu .sub a:hover{opacity:1;}
+#menu .row{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;}
+#menu .row .lbl{opacity:0.8;}
+#menu input[type=range]{width:96px;}
+#menu .bg-btns{display:flex;gap:4px;flex-wrap:wrap;max-width:150px;justify-content:flex-end;}
+#menu .bg-btns button{padding:3px 8px;font-size:12px;border:1px solid rgba(0,0,0,0.15);background:transparent;border-radius:3px;font-family:inherit;color:var(--ink);cursor:pointer;opacity:0.7;}
+#menu .bg-btns button.on{background:var(--ink);color:var(--paper);opacity:1;}
+#menu .lang{display:flex;gap:6px;padding:6px 20px 12px;}
+#menu .lang button{flex:1;padding:5px 0;border:1px solid rgba(0,0,0,0.15);background:transparent;border-radius:3px;font-family:inherit;font-size:13px;color:var(--ink);cursor:pointer;opacity:0.7;}
+#menu .lang button.on{background:var(--ink);color:var(--paper);opacity:1;}
+/* 输出区（中间偏上） */
+#frame{
+  position:fixed;top:34%;left:50%;transform:translate(-50%,-50%);
+  max-width:72vw;text-align:center;
+  font-size:clamp(1.6rem,3.6vw,2.2rem);color:var(--ink);opacity:0.95;
+  letter-spacing:0.2rem;line-height:2;z-index:2;transition:opacity 1s;pointer-events:none;
+}
+#echo{
+  position:fixed;top:52%;left:50%;transform:translate(-50%,-50%);
+  max-width:78vw;text-align:center;
+  font-size:clamp(1.5rem,3.2vw,2rem);color:var(--ink);opacity:0.95;
+  letter-spacing:0.15rem;line-height:2.1;z-index:2;transition:opacity 1s;pointer-events:none;
+}
+#echo .et{font-size:1em;}
+#echo .es{font-size:1.3rem;opacity:1;margin-top:8px;letter-spacing:0.2rem;}
+#echo .en{font-size:1.1rem;opacity:0.9;margin-top:10px;letter-spacing:0.1rem;}
+#frame.hidden,#echo.hidden{opacity:0;}
+/* 提示语 + 输入：页面下方 */
+#prompt{
+  position:fixed;bottom:22%;left:50%;transform:translateX(-50%);
+  max-width:66vw;text-align:center;
+  font-size:clamp(0.98rem,2vw,1.22rem);color:var(--ink);opacity:0.6;
+  letter-spacing:0.18rem;line-height:2.4;white-space:pre-line;z-index:2;transition:opacity .8s;pointer-events:none;
+}
+#prompt.hidden{opacity:0;}
+#input{
+  position:fixed;bottom:17%;left:50%;transform:translateX(-50%);
+  width:min(56vw,480px);
+  background:transparent;border:none;
+  border-bottom:1px solid rgba(0,0,0,0.28);
+  outline:none;font-family:inherit;
+  font-size:1.5rem;color:var(--ink);text-align:center;letter-spacing:0.2rem;
+  padding:8px 4px 12px;
+  opacity:0;pointer-events:none;transition:opacity .5s;z-index:3;
+}
+#input.show{opacity:0.95;pointer-events:auto;}
+#input::placeholder{color:rgba(0,0,0,0.28);letter-spacing:0.2rem;}
+#signature{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+  font-size:0.85rem;color:var(--ink);opacity:0.3;letter-spacing:0.2rem;z-index:2;pointer-events:none;
+}
+.sisters{
+  position:fixed;bottom:54px;left:50%;transform:translateX(-50%);
+  font-size:0.82rem;color:var(--ink);opacity:0.42;
+  letter-spacing:0.06rem;z-index:2;white-space:nowrap;
+}
+.sisters a{color:var(--ink);text-decoration:none;margin:0 5px;}
+.sisters a:hover{opacity:0.65;}
+/* 历史回看 */
+#history{
+  position:fixed;inset:0;background:rgba(232,237,239,0.97);
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:12vh 8vw;opacity:0;pointer-events:none;transition:opacity .4s;z-index:5;overflow-y:auto;
+}
+#history.show{opacity:1;pointer-events:auto;}
+#history h2{font-size:1.1rem;font-weight:400;color:var(--ink);opacity:0.4;letter-spacing:0.4rem;margin-bottom:3vh;}
+#hlist{width:100%;max-width:520px;}
+.hitem{text-align:center;padding:1.6vh 0;border-bottom:1px dashed rgba(0,0,0,0.08);}
+.hitem .date{font-size:0.8rem;color:var(--ink);opacity:0.3;letter-spacing:0.2rem;}
+.hitem .text{font-size:1.05rem;color:var(--ink);opacity:0.6;margin:6px 0;letter-spacing:0.1rem;line-height:1.8;}
+.hitem .echo{font-size:0.95rem;color:var(--ink);opacity:0.4;letter-spacing:0.08rem;}
+#history .close-hint{font-size:0.8rem;opacity:0.25;margin-top:3vh;letter-spacing:0.2rem;}
+</style>
+</head>
+<body>
+  <div id="scene"></div>
+  <div id="light-shadow" class="line"></div>
+
+  <div id="leaves">
+    <svg class="leaf" width="22" height="22" style="left:12%;animation-duration:14s;animation-delay:0s;" viewBox="0 0 24 24"><path d="M2 2 Q14 4 22 14 Q14 22 2 22 Q4 10 2 2 Z" fill="#7a8a72" opacity="0.22"/></svg>
+    <svg class="leaf" width="22" height="22" style="left:28%;animation-duration:18s;animation-delay:4s;" viewBox="0 0 24 24"><path d="M2 2 Q14 4 22 14 Q14 22 2 22 Q4 10 2 2 Z" fill="#7a8a72" opacity="0.18"/></svg>
+    <svg class="leaf" width="22" height="22" style="left:62%;animation-duration:16s;animation-delay:8s;" viewBox="0 0 24 24"><path d="M2 2 Q14 4 22 14 Q14 22 2 22 Q4 10 2 2 Z" fill="#7a8a72" opacity="0.20"/></svg>
+    <svg class="leaf" width="22" height="22" style="left:80%;animation-duration:20s;animation-delay:2s;" viewBox="0 0 24 24"><path d="M2 2 Q14 4 22 14 Q14 22 2 22 Q4 10 2 2 Z" fill="#7a8a72" opacity="0.16"/></svg>
+  </div>
+
+  <div id="brand-wrap">
+    <div id="brand"><span>闲</span><span>坐</span></div>
+    <div id="brand-en">XianReverie</div>
+    <button id="menu-btn" aria-label="菜单">☰</button>
+    <button id="lang-toggle" aria-label="切换语言">EN</button>
+  </div>
+
+  <div id="frame" class="hidden"></div>
+  <div id="echo" class="hidden"></div>
+  <div id="prompt"></div>
+  <input id="input" type="text" maxlength="40" placeholder="提笔，落一句">
+
+  <div class="sisters">
+    <a href="https://podcatcher962.github.io/PetalVerse/" target="_blank">PetalVerse</a> ·
+    <a href="https://podcatcher962.github.io/PixelBaZi/" target="_blank">PixelBaZi</a> ·
+    <a href="https://podcatcher962.github.io/IChing/" target="_blank">IChing</a> ·
+    <a href="https://podcatcher962.github.io/YuguTether/" target="_blank">YuguTether</a> ·
+    <a href="https://podcatcher962.github.io/ZiOracle/" target="_blank">ZiOracle</a> ·
+    <a href="https://podcatcher962.github.io/AvalokitaOracle/" target="_blank">AvalokitaOracle</a>
+  </div>
+  <div id="signature">永远的兰兰 · Lanlan Eternal</div>
+
+  <div id="history">
+    <h2 id="h-title">往 日</h2>
+    <div id="hlist"></div>
+    <div class="close-hint" id="h-hint">单击空白处返回</div>
+  </div>
+
+  <div id="menu">
+    <button class="mi" id="mi-memory">回看往日</button>
+    <button class="mi" id="mi-export">导出图片</button>
+    <div class="row">
+      <span class="lbl" id="lbl-bg">背景</span>
+      <div class="bg-btns" id="bg-btns">
+        <button data-bg="xieyang">斜阳</button>
+        <button data-bg="mingyue">明月</button>
+        <button data-bg="zhulin">竹林</button>
+        <button data-bg="gucha">古刹</button>
+        <button data-bg="guzhou">孤舟</button>
+        <button data-bg="song">听松</button>
+        <button data-bg="yunhai">云海</button>
+        <button data-bg="yuhuo">渔火</button>
+      </div>
+    </div>
+    <div class="row">
+      <span class="lbl" id="lbl-light">光影</span>
+      <div class="bg-btns" id="light-btns">
+        <button data-light="leaf">落叶</button>
+        <button data-light="line">斜线</button>
+        <button data-light="none">无</button>
+      </div>
+    </div>
+    <div class="row"><span class="lbl" id="lbl-speed">光速</span><input type="range" id="light-speed" min="120" max="900" value="400"></div>
+    <div class="group">
+      <button class="mi" id="mi-use">使用说明</button>
+      <div class="sub" id="sub-use"></div>
+    </div>
+    <div class="group">
+      <button class="mi" id="mi-disc">免责声明</button>
+      <div class="sub" id="sub-disc"></div>
+    </div>
+    <div class="group">
+      <button class="mi" id="mi-about">关于</button>
+      <div class="sub" id="sub-about"></div>
+    </div>
+    <div class="row"><span class="lbl" id="lbl-fade">淡出墨字</span><input type="checkbox" id="hide-text"></div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+  const KEY = 'xiangzuo_frames';
+    const SCENES = {
+    xieyang: 'generated-images/bg1_xieyang.png',
+    mingyue: 'generated-images/bg2_mingyue.png',
+    zhulin: 'generated-images/bg3_zhulin.png',
+    gucha: 'generated-images/bg4_gucha.png',
+    guzhou: 'generated-images/bg5_guzhou.png',
+    song: 'generated-images/bg6_song.png',
+    yunhai: 'generated-images/bg7_yunhai.png',
+    yuhuo: 'generated-images/bg8_yuhuo.png'
+  };
+  const ECHO = [
+  {
+    "t": "行到水穷处，坐看云起时",
+    "s": "王维",
+    "n": "无路可走时，不妨坐下来看云。",
+    "te": "I walk to where the stream ends, and sit to watch the clouds rise.",
+    "se": "Wang Wei",
+    "ne": "When there is no way forward, just sit and watch the clouds."
+  },
+  {
+    "t": "采菊东篱下，悠然见南山",
+    "s": "陶渊明",
+    "n": "低头采菊，抬头见山，都是自在。",
+    "te": "Picking chrysanthemums by the east hedge, I gaze far to the southern hills.",
+    "se": "Tao Yuanming",
+    "ne": "Gathering blooms below, gazing at hills above — both are ease."
+  },
+  {
+    "t": "此心安处是吾乡",
+    "s": "苏轼",
+    "n": "心安在哪里，哪里就是归处。",
+    "te": "Wherever the heart finds peace, there is my home.",
+    "se": "Su Shi",
+    "ne": "Where the heart settles is where you belong."
+  },
+  {
+    "t": "若无闲事挂心头，便是人间好时节",
+    "s": "无门慧开",
+    "n": "心里无事，天天都是好日子。",
+    "te": "If no idle cares weigh on the mind, every season is a fine season.",
+    "se": "Wumen Huikai",
+    "ne": "A heart with nothing weighing on it makes every day a good day."
+  },
+  {
+    "t": "明月松间照，清泉石上流",
+    "s": "王维",
+    "n": "月照松林，泉过石上，静得很。",
+    "te": "Bright moonlight shines through the pines; clear springs flow over the stones.",
+    "se": "Wang Wei",
+    "ne": "Moon on pines, spring over stones — all is still."
+  },
+  {
+    "t": "落霞与孤鹜齐飞，秋水共长天一色",
+    "s": "王勃",
+    "n": "晚霞与孤鸟同飞，水天一色。",
+    "te": "The setting clouds and a lone wild duck fly together; the autumn river blends with the sky in one hue.",
+    "se": "Wang Bo",
+    "ne": "Evening clouds and a lone bird fly as one; water and sky share a single color."
+  },
+  {
+    "t": "山气日夕佳，飞鸟相与还",
+    "s": "陶渊明",
+    "n": "山间傍晚正好，飞鸟结伴归巢。",
+    "te": "The mountain air is lovely at dusk, and birds return home in pairs.",
+    "se": "Tao Yuanming",
+    "ne": "Mountain dusk at its best, birds flying home together."
+  },
+  {
+    "t": "蝉噪林逾静，鸟鸣山更幽",
+    "s": "王籍",
+    "n": "越有蝉鸣鸟叫，越显得山静。",
+    "te": "The cicadas' drone makes the woods quieter; birdsong makes the hills more still.",
+    "se": "Wang Ji",
+    "ne": "The louder the cicadas, the deeper the quiet."
+  },
+  {
+    "t": "问君何能尔，心远地自偏",
+    "s": "陶渊明",
+    "n": "心若远了，闹市也清静。",
+    "te": "You ask how I keep so serene; the heart far away makes the place remote.",
+    "se": "Tao Yuanming",
+    "ne": "When the heart is far, even the noisy world grows quiet."
+  },
+  {
+    "t": "小舟从此逝，江海寄余生",
+    "s": "苏轼",
+    "n": "一叶小舟，把余生交给江海。",
+    "te": "From now on a small boat drifts away, leaving my remaining years to the rivers and seas.",
+    "se": "Su Shi",
+    "ne": "A little boat, entrusting the rest of life to the waters."
+  },
+  {
+    "t": "一蓑烟雨任平生",
+    "s": "苏轼",
+    "n": "披一蓑烟雨，走完这一生。",
+    "te": "In a straw cloak I face the misty rain, taking life as it comes.",
+    "se": "Su Shi",
+    "ne": "Clad in a straw cloak, walk through the misty rain of life."
+  },
+  {
+    "t": "山光悦鸟性，潭影空人心",
+    "s": "常建",
+    "n": "山光让鸟欢喜，潭影把心放空。",
+    "te": "The mountain light delights the birds; the pool's reflection empties the heart.",
+    "se": "Chang Jian",
+    "ne": "Light gladdens the birds; the mirroring pool empties the mind."
+  },
+  {
+    "t": "空山新雨后，天气晚来秋",
+    "s": "王维",
+    "n": "新雨过后，空山已入秋。",
+    "te": "After fresh rain on the empty mountains, evening brings the feel of autumn.",
+    "se": "Wang Wei",
+    "ne": "After the rain, the empty hills already breathe autumn."
+  },
+  {
+    "t": "荷风送香气，竹露滴清响",
+    "s": "孟浩然",
+    "n": "风送荷香，竹滴清露。",
+    "te": "The wind over the lotus carries fragrance; dew drips from the bamboo with a clear sound.",
+    "se": "Meng Haoran",
+    "ne": "Wind brings the lotus scent; bamboo sheds clear dew."
+  },
+  {
+    "t": "半亩方塘一鉴开，天光云影共徘徊",
+    "s": "朱熹",
+    "n": "半亩方塘，照见天光云影。",
+    "te": "A half-acre square pond opens like a mirror, where sky and cloud shadows linger together.",
+    "se": "Zhu Xi",
+    "ne": "A small pond mirrors the sky and drifting clouds."
+  },
+  {
+    "t": "绿树阴浓夏日长，楼台倒影入池塘",
+    "s": "高骈",
+    "n": "夏日荫浓，楼影入塘。",
+    "te": "Green trees cast deep shade and the summer day is long; the pavilion's reflection falls into the pond.",
+    "se": "Gao Pian",
+    "ne": "Deep shade and long summer days, towers mirrored in the pond."
+  },
+  {
+    "t": "水晶帘动微风起，满架蔷薇一院香",
+    "s": "高骈",
+    "n": "微风起时，满院都是香。",
+    "te": "The crystal curtain stirs as a breeze rises; a trellis of roses scents the whole yard.",
+    "se": "Gao Pian",
+    "ne": "A breeze rises, and the whole yard is fragrant."
+  },
+  {
+    "t": "银烛秋光冷画屏，轻罗小扇扑流萤",
+    "s": "杜牧",
+    "n": "秋夜烛光，小扇扑萤。",
+    "te": "Silver candles and autumn light chill the painted screen; a light silk fan chases fireflies.",
+    "se": "Du Mu",
+    "ne": "Autumn candlelight, a small fan chasing fireflies."
+  },
+  {
+    "t": "江天一色无纤尘，皎皎空中孤月轮",
+    "s": "张若虚",
+    "n": "江天一色，孤月一轮。",
+    "te": "River and sky are one color, without a speck of dust; a lone moon hangs bright in the sky.",
+    "se": "Zhang Ruoxu",
+    "ne": "River and sky as one; a single bright moon."
+  },
+  {
+    "t": "相看两不厌，只有敬亭山",
+    "s": "李白",
+    "n": "看山不厌，山也不厌我。",
+    "te": "We gaze at each other and never tire — only Mount Jingting and I.",
+    "se": "Li Bai",
+    "ne": "Never tired of the mountain, nor it of me."
+  },
+  {
+    "t": "孤舟蓑笠翁，独钓寒江雪",
+    "s": "柳宗元",
+    "n": "一舟一翁，独钓一江寒雪。",
+    "te": "A lone boat, an old man in straw cloak and hat, fishing alone in the cold river snow.",
+    "se": "Liu Zongyuan",
+    "ne": "One boat, one old man, fishing the cold snow-covered river alone."
+  },
+  {
+    "t": "千山鸟飞绝，万径人踪灭",
+    "s": "柳宗元",
+    "n": "千山无鸟，万径无人，静到极致。",
+    "te": "Over a thousand hills no bird flies; on ten thousand paths no footprint remains.",
+    "se": "Liu Zongyuan",
+    "ne": "No birds, no tracks — silence at its extreme."
+  },
+  {
+    "t": "明月几时有，把酒问青天",
+    "s": "苏轼",
+    "n": "举杯问天，明月几时有。",
+    "te": "How long has the bright moon been there? Raising my cup, I ask the blue sky.",
+    "se": "Su Shi",
+    "ne": "Cup raised to heaven, asking when the moon first shone."
+  },
+  {
+    "t": "大漠孤烟直，长河落日圆",
+    "s": "王维",
+    "n": "大漠孤烟，长河落日。",
+    "te": "A single plume of smoke rises straight in the desert; the setting sun is round over the long river.",
+    "se": "Wang Wei",
+    "ne": "Desert smoke upright, river sunset round."
+  },
+  {
+    "t": "水光潋滟晴方好，山色空蒙雨亦奇",
+    "s": "苏轼",
+    "n": "晴也好，雨也好，各有各的好。",
+    "te": "The lake glitters in sunshine; the hills are lovely in misty rain too.",
+    "se": "Su Shi",
+    "ne": "Fine in sun, fine in rain — each has its beauty."
+  },
+  {
+    "t": "众鸟高飞尽，孤云独去闲",
+    "s": "李白",
+    "n": "鸟飞尽了，云也闲闲飘走。",
+    "te": "The birds have all flown away; a lone cloud drifts off at leisure.",
+    "se": "Li Bai",
+    "ne": "Birds gone, a single cloud drifting idly."
+  },
+  {
+    "t": "野旷天低树，江清月近人",
+    "s": "孟浩然",
+    "n": "江清的时候，月亮离人很近。",
+    "te": "On the open plain the sky lowers to the trees; in the clear river the moon draws near.",
+    "se": "Meng Haoran",
+    "ne": "When the river is clear, the moon feels close."
+  },
+  {
+    "t": "松风吹解带，山月照弹琴",
+    "s": "王维",
+    "n": "松风吹来，山月照着弹琴。",
+    "te": "The pine wind loosens my sash; the mountain moon shines on my zither.",
+    "se": "Wang Wei",
+    "ne": "Pine wind, mountain moon, and the sound of strings."
+  },
+  {
+    "t": "返景入深林，复照青苔上",
+    "s": "王维",
+    "n": "夕阳照进深林，落在青苔上。",
+    "te": "The returning light enters the deep woods, and shines again on the green moss.",
+    "se": "Wang Wei",
+    "ne": "Setting light into the deep woods, falling on the moss."
+  },
+  {
+    "t": "清晨入古寺，初日照高林",
+    "s": "常建",
+    "n": "清晨入寺，朝阳照林。",
+    "te": "In early morning I enter the old temple, as the first sun lights the tall woods.",
+    "se": "Chang Jian",
+    "ne": "Morning at the old temple, first light on the trees."
+  },
+  {
+    "t": "万籁此俱寂，但余钟磬音",
+    "s": "常建",
+    "n": "万籁俱寂，只有钟磬声。",
+    "te": "All sounds fall silent here; only the bell and chime remain.",
+    "se": "Chang Jian",
+    "ne": "All is still, save the temple bell."
+  },
+  {
+    "t": "姑苏城外寒山寺，夜半钟声到客船",
+    "s": "张继",
+    "n": "夜半钟声，传到客船。",
+    "te": "Outside Gusu, by Hanshan Temple, the midnight bell reaches the traveler's boat.",
+    "se": "Zhang Ji",
+    "ne": "The midnight bell drifting to a moored boat."
+  },
+  {
+    "t": "深林人不知，明月来相照",
+    "s": "王维",
+    "n": "深林无人知，明月来作伴。",
+    "te": "In the deep woods no one knows; the bright moon comes to shine on me.",
+    "se": "Wang Wei",
+    "ne": "Unknown in the deep woods, the moon keeps me company."
+  },
+  {
+    "t": "落叶满空山，何处寻行迹",
+    "s": "韦应物",
+    "n": "落叶满山，行迹难寻。",
+    "te": "Fallen leaves cover the empty mountain; where can any trace be found?",
+    "se": "Wei Yingwu",
+    "ne": "Leaves fill the mountain; no trace to be found."
+  },
+  {
+    "t": "日暮苍山远，天寒白屋贫",
+    "s": "刘长卿",
+    "n": "暮色苍山远，寒夜白屋贫。",
+    "te": "At dusk the gray hills look far; in the cold, the poor thatched house stands.",
+    "se": "Liu Zhangqing",
+    "ne": "Dusk far hills, a cold poor cottage."
+  },
+  {
+    "t": "愿你，今日无事。",
+    "s": "",
+    "n": "",
+    "te": "May you have a day with nothing to do.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "慢慢来，比较快。",
+    "s": "",
+    "n": "",
+    "te": "Take it slow; you'll get there faster.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "世间万物，皆有定时。",
+    "s": "",
+    "n": "",
+    "te": "To everything there is a season.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "今天的风，很温柔。",
+    "s": "",
+    "n": "",
+    "te": "The wind is gentle today.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "且听风吟。",
+    "s": "",
+    "n": "",
+    "te": "Just listen to the wind.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "静下来，听一听自己。",
+    "s": "",
+    "n": "",
+    "te": "Quiet down, and listen to yourself.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "一切，都会好的。",
+    "s": "",
+    "n": "",
+    "te": "Everything will be all right.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "时光缓缓，岁月静好。",
+    "s": "",
+    "n": "",
+    "te": "Time flows gently; the days are peaceful.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "无事，即是安好。",
+    "s": "",
+    "n": "",
+    "te": "Nothing to do is itself a blessing.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "愿你眉目舒展，顺问心安。",
+    "s": "",
+    "n": "",
+    "te": "May your brow be smooth, and your heart at peace.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "山高水长，各自珍重。",
+    "s": "",
+    "n": "",
+    "te": "Mountains high, waters long — take care.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "心若止水，波澜不惊。",
+    "s": "",
+    "n": "",
+    "te": "A heart still as water, unmoved by waves.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "一念放下，万般自在。",
+    "s": "",
+    "n": "",
+    "te": "Let go of one thought, and gain boundless ease.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "万物皆有裂痕，那是光照进来的地方。",
+    "s": "",
+    "n": "",
+    "te": "There is a crack in everything; that's how the light gets in.",
+    "se": "",
+    "ne": ""
+  },
+  {
+    "t": "此去经年，各自安然。",
+    "s": "",
+    "n": "",
+    "te": "After these long years apart, may each be well.",
+    "se": "",
+    "ne": ""
+  }
+];
+
+  const PROMPTS = {
+    zh: [
+      "不必急着写什么。\n先坐一会儿，让心静下来。\n想写了，自然提笔；\n不想写，就看这山水流转。\n这里没有别人，只有你自己。",
+      "凝神，静气。\n等一个念头浮起来。\n它来了，便落一笔；\n它不来，便看云、看山、看景。\n写与不写，都好。",
+      "此刻，你只属于你自己。\n可以把心事落成一句，\n也可以什么都不说，\n只是闲坐，看这山色空濛。\n这方寸之间，都是你的。",
+      "慢慢等，念头会自己浮上来。\n若有一句，便写下来；\n若没有，便继续安静。\n闲坐本身，就是一件正经事。"
+    ],
+    en: [
+      "No need to write yet.\nSit for a while, let your mind settle.\nWhen you feel like it, write;\nif not, watch the hills and clouds.\nThere is no one here but you.",
+      "Calm your mind, still your breath.\nWait for a thought to rise.\nWhen it comes, write a line;\nif not, watch the clouds and hills.\nTo write or not — both are fine.",
+      "This moment belongs to you alone.\nPut your heart into a line,\nor say nothing at all,\njust sit and watch the quiet scene.\nThis little space is all yours.",
+      "Wait slowly; the thought will rise.\nIf a line comes, write it down;\nif not, stay quiet.\nSitting idle is itself a worthy thing."
+    ]
+  };
+
+  const I18N = {
+    zh: {
+      memory:"回看往日", export:"导出图片", use:"使用说明", disc:"免责声明", about:"关于",
+      fade:"淡出墨字", bg:"背景", light:"光影", speed:"光速", sisters:"姊妹工具", hTitle:"往 日", hHint:"单击空白处返回",
+      useTxt:"闲坐是一个安静的个人角落，不联网、无账号、无分享。\n单击屏幕：写下今日一帧；回车后，会有一句回响。\n双击屏幕（或菜单里「回看」）：看往日留下的帧。\n菜单里可切换八幅山水背景，随心更换。",
+      discTxt:"本软件仅供个人静心、记录与娱乐，不含任何商业、社交或数据收集功能。\n所有数据仅保存在本地浏览器，开发者无法访问。\n回响诗句整理自公开文献，仅供参考。",
+      aboutTxt:"闲坐 XianReverie\n闲坐，不必言说。\n作者：永远的兰兰 · Lanlan Eternal"
+    },
+    en: {
+      memory:"Memory", export:"Export", use:"How to use", disc:"Disclaimer", about:"About",
+      fade:"Fade text", bg:"Scene", light:"Light", speed:"Speed", sisters:"Sisters", hTitle:"Memory", hHint:"Tap anywhere to return",
+      useTxt:"Idle is a quiet personal corner. No network, no account, no sharing.\nTap the screen to write today's line; press Enter and a verse echoes back.\nDouble-tap (or \"Memory\" in the menu) to review past days.\nThe light drifting across the wall is time passing by.",
+      discTxt:"For personal reflection and enjoyment only. No commerce, no social features, no tracking.\nAll data stays in your local browser; the developer cannot access it.\nVerses are compiled from public sources for reference.",
+      aboutTxt:"XianReverie (Xiangzuo)\nSit idle, no need to speak.\nBy Lanlan Eternal"
+    }
+  };
+  let lang = localStorage.getItem('xiangzuo_lang') || 'zh';
+
+  const $ = (id) => document.getElementById(id);
+  const scene = $('scene'), shadow = $('light-shadow'), leaves = $('leaves');
+  const frame = $('frame'), echo = $('echo'), prompt = $('prompt'), input = $('input');
+  const history = $('history'), hlist = $('hlist');
+  const menuBtn = $('menu-btn'), menu = $('menu');
+  const hideText = $('hide-text');
+
+  // 背景切换
+  let bg = localStorage.getItem('xiangzuo_bg') || 'xieyang';
+  function setScene(key) {
+    bg = key;
+    scene.style.backgroundImage = 'url("' + SCENES[key] + '")';
+    localStorage.setItem('xiangzuo_bg', key);
+    document.querySelectorAll('#bg-btns button').forEach(b => b.classList.toggle('on', b.dataset.bg === key));
+  }
+  document.querySelectorAll('#bg-btns button').forEach(b => {
+    b.addEventListener('click', () => setScene(b.dataset.bg));
+  });
+
+  // 光影切换（落叶 / 斜线 / 无，互斥）
+  let light = localStorage.getItem('xiangzuo_light') || 'line';
+  function setLight(key) {
+    light = key;
+    shadow.className = (key === 'line') ? 'line' : 'none';
+    leaves.classList.toggle('show', key === 'leaf');
+    localStorage.setItem('xiangzuo_light', key);
+    document.querySelectorAll('#light-btns button').forEach(b => b.classList.toggle('on', b.dataset.light === key));
+  }
+  document.querySelectorAll('#light-btns button').forEach(b => {
+    b.addEventListener('click', () => setLight(b.dataset.light));
+  });
+
+  // 光速（斜线扫过速度）
+  const speedInput = $('light-speed');
+  let lightSpeed = parseInt(localStorage.getItem('xiangzuo_speed') || '400');
+  speedInput.value = lightSpeed;
+  function applySpeed() {
+    shadow.style.setProperty('--lspeed', lightSpeed + 's');
+    localStorage.setItem('xiangzuo_speed', lightSpeed);
+  }
+  speedInput.addEventListener('input', () => { lightSpeed = speedInput.value; applySpeed(); });
+
+  function today() { return new Date().toISOString().slice(0,10); }
+  function loadFrames() {
+    try { const d = JSON.parse(localStorage.getItem(KEY)); return Array.isArray(d) ? d : []; }
+    catch(e) { return []; }
+  }
+  function saveFrames(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); }
+  function todayFrame() { return loadFrames().find(f => f.date === today()) || null; }
+  function pickEcho() { return ECHO[Math.floor(Math.random() * ECHO.length)]; }
+  function pickPrompt() { return PROMPTS[lang][Math.floor(Math.random() * PROMPTS[lang].length)]; }
+  function echoParts(e) {
+    if (!e) return null;
+    const isEn = lang === 'en';
+    return {
+      t: isEn ? (e.te || e.t) : e.t,
+      s: isEn ? (e.se || e.s) : e.s,
+      n: isEn ? (e.ne || e.n) : e.n
+    };
+  }
+
+  function renderToday() {
+    const f = todayFrame();
+    if (f) {
+      frame.textContent = f.text;
+      frame.classList.remove('hidden');
+      const ep = echoParts(f.echo);
+      echo.innerHTML = (ep ? '<div class="et">' + ep.t + '</div>' + (ep.s ? '<div class="es">' + ep.s + '</div>' : '') + (ep.n ? '<div class="en">' + ep.n + '</div>' : '') : '');
+      echo.classList.remove('hidden');
+      prompt.classList.add('hidden');
+    } else {
+      frame.classList.add('hidden');
+      echo.classList.add('hidden');
+      prompt.textContent = pickPrompt();
+      prompt.classList.remove('hidden');
+    }
+  }
+
+  function openInput() {
+    input.value = todayFrame() ? todayFrame().text : '';
+    input.placeholder = lang === 'zh' ? '提笔，落一句' : 'Write a line';
+    input.classList.add('show');
+    input.focus();
+    prompt.classList.add('hidden');
+    scene.classList.add('fade');
+  }
+  function closeInput() { input.classList.remove('show'); input.blur(); scene.classList.remove('fade'); }
+  function saveToday(text) {
+    text = (text || '').trim();
+    const arr = loadFrames();
+    const idx = arr.findIndex(f => f.date === today());
+    const rec = { date: today(), text: text, echo: pickEcho() };
+    if (idx >= 0) arr[idx] = rec; else arr.push(rec);
+    saveFrames(arr);
+    renderToday();
+  }
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { saveToday(input.value); closeInput(); }
+    if (e.key === 'Escape') { closeInput(); }
+  });
+
+  function renderHistory() {
+    const arr = loadFrames().slice().reverse();
+    hlist.innerHTML = '';
+    if (!arr.length) {
+      hlist.innerHTML = '<div class="hitem"><div class="text">' + (lang === 'zh' ? '还没有留下什么。' : 'Nothing here yet.') + '</div></div>';
+      return;
+    }
+    arr.forEach(f => {
+      const d = document.createElement('div');
+      d.className = 'hitem';
+      const ep = echoParts(f.echo);
+      d.innerHTML = '<div class="date">' + f.date + '</div>' +
+        '<div class="text">' + (f.text || '（未留言）') + '</div>' +
+        (ep ? '<div class="echo">' + ep.t + (ep.s ? ' — ' + ep.s : '') + (ep.n ? '<br>' + ep.n : '') + '</div>' : '');
+      hlist.appendChild(d);
+    });
+  }
+  function openHistory() { renderHistory(); history.classList.add('show'); menu.classList.remove('show'); }
+  function closeHistory() { history.classList.remove('show'); }
+
+  function wrapText(ctx, text, maxW) {
+    const lines = []; let line = '';
+    for (const ch of text) {
+      if (ctx.measureText(line + ch).width > maxW && line) { lines.push(line); line = ch; }
+      else line += ch;
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+  function exportImage() {
+    const W = 1080, H = 1440;
+    const img = new Image();
+    img.onload = function() {
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#e8edef'; ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, 0, 0, W, H);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '90px KaiTi, STKaiti, serif';
+      ctx.fillStyle = 'rgba(58,63,66,0.3)';
+      ctx.fillText('闲', W - 90, 150);
+      ctx.fillText('坐', W - 90, 260);
+      const f = todayFrame();
+      const line = f && f.text ? f.text : (lang === 'zh' ? '闲坐，不必言说。' : 'Sit idle, no need to speak.');
+      ctx.font = '46px KaiTi, STKaiti, serif';
+      ctx.fillStyle = 'rgba(58,63,66,0.55)';
+      const lines = wrapText(ctx, line, W*0.66);
+      lines.forEach((ln, i) => ctx.fillText(ln, W/2, H*0.5 + i*62));
+      if (f && f.echo) {
+        const ep = echoParts(f.echo);
+        ctx.font = '38px KaiTi, STKaiti, serif';
+        ctx.fillStyle = 'rgba(58,63,66,0.42)';
+        ctx.fillText(ep.t + (ep.s ? ' — ' + ep.s : ''), W/2, H*0.62);
+        if (ep.n) { ctx.font = '30px KaiTi, STKaiti, serif'; ctx.fillStyle = 'rgba(58,63,66,0.32)'; ctx.fillText(ep.n, W/2, H*0.68); }
+      }
+      ctx.font = '26px KaiTi, STKaiti, serif';
+      ctx.fillStyle = 'rgba(58,63,66,0.3)';
+      ctx.fillText('永远的兰兰 · Lanlan Eternal', W/2, H - 70);
+      ctx.fillText(today(), W/2, H - 110);
+      const a = document.createElement('a');
+      a.download = '闲坐_' + today() + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      menu.classList.remove('show');
+    };
+    img.src = SCENES[bg];
+  }
+
+  $('mi-memory').addEventListener('click', openHistory);
+  $('mi-export').addEventListener('click', exportImage);
+
+  function applyLang() {
+    $('mi-memory').firstChild.textContent = I18N[lang].memory;
+    $('mi-export').firstChild.textContent = I18N[lang].export;
+    $('mi-use').firstChild.textContent = I18N[lang].use;
+    $('mi-disc').firstChild.textContent = I18N[lang].disc;
+    $('mi-about').firstChild.textContent = I18N[lang].about;
+    $('lbl-fade').textContent = I18N[lang].fade;
+    $('lbl-bg').textContent = I18N[lang].bg;
+    $('lbl-light').textContent = I18N[lang].light;
+    $('lbl-speed').textContent = I18N[lang].speed;
+    $('h-title').textContent = I18N[lang].hTitle;
+    $('h-hint').textContent = I18N[lang].hHint;
+    $('sub-use').textContent = I18N[lang].useTxt;
+    $('sub-disc').textContent = I18N[lang].discTxt;
+    $('sub-about').textContent = I18N[lang].aboutTxt;
+    $('lang-toggle').textContent = lang === 'zh' ? 'EN' : '中文';
+    input.placeholder = lang === 'zh' ? '提笔，落一句' : 'Write a line';
+    if (!todayFrame()) prompt.textContent = pickPrompt();
+    renderToday();
+  }
+  $('lang-toggle').addEventListener('click', () => {
+    lang = (lang === 'zh') ? 'en' : 'zh';
+    localStorage.setItem('xiangzuo_lang', lang);
+    applyLang();
+  });
+
+  let clickTimer = null;
+  document.body.addEventListener('click', (e) => {
+    if (e.target === menuBtn || menu.contains(e.target)) return;
+    if (history.classList.contains('show')) { closeHistory(); return; }
+    if (menu.classList.contains('show')) { menu.classList.remove('show'); return; }
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => { openInput(); }, 260);
+  });
+  document.body.addEventListener('dblclick', (e) => {
+    clearTimeout(clickTimer);
+    if (e.target === menuBtn || menu.contains(e.target)) return;
+    openHistory();
+  });
+  menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('show'); });
+
+  hideText.addEventListener('change', () => {
+    const off = hideText.checked ? '0' : '';
+    frame.style.opacity = off;
+    echo.style.opacity = off;
+    prompt.style.opacity = off;
+  });
+
+  setScene(bg);
+  setLight(light);
+  applySpeed();
+  applyLang();
+})();
+</script>
+</body>
+</html>
