@@ -933,7 +933,7 @@ body{
     do { idx = Math.floor(Math.random() * TRACKS.length); } while (idx === trackIdx && TRACKS.length > 1);
     trackIdx = idx;
     bgm.src = TRACKS[idx].file;
-    bgm.volume = 0.35;
+    bgm.volume = 0.25;
     bgm.play().catch(() => {});
   }
   function updateSoundUI() {
